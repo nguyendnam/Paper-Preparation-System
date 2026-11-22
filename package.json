@@ -1,0 +1,17 @@
+{
+    "name": "paper-preparation-system",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@10.0.0",
+    "scripts": {
+      "dev": "pnpm --parallel --filter @paper/api --filter @paper/web dev",
+      "dev:api": "pnpm --filter @paper/api dev",
+      "dev:web": "pnpm --filter @paper/web dev",
+      "build": "pnpm -r build",
+      "typecheck": "pnpm -r typecheck",
+      "test": "pnpm -r test",
+      "db:generate": "pnpm --filter @paper/api exec prisma generate",
+      "db:migrate": "pnpm --filter @paper/api exec prisma migrate dev",
+      "db:studio": "pnpm --filter @paper/api exec prisma studio"
+    }
+  }

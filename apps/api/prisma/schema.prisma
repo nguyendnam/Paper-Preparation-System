@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GroupRole {
+  MAIN_AUTHOR
+  CO_AUTHOR
+  VERIFIER
+  SUPERVISOR
+}
+
+enum TargetStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum RequirementType {
+  MANDATORY
+  OPTIONAL
+  RECOMMENDED
+}
+
+enum RequirementStatus {
+  NOT_REVIEWED
+  NEEDS_ACTION
+  PENDING_VERIFICATION
+  VERIFIED
+  NOT_APPLICABLE
+}
+
+enum RequirementSourceType {
+  CFP
+  AUTHOR_GUIDELINES
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum EvidenceType {
+  NOTE
+  URL
+  FILE
+  VERSION_REFERENCE
+}
+
+enum VerificationResult {
+  PASSED
+  FAILED
+  NEEDS_REVISION
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique
+  displayName    String
+  passwordHash   String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sessions       UserSession[]
+  memberships    GroupMembership[]
+  createdPapers  Paper[] @relation("PaperCreator")
+  assignedTasks  Task[] @relation("TaskAssignee")
+  createdTasks   Task[] @relation("TaskCreator")
+  createdEvidence Evidence[] @relation("EvidenceCreator")
+  verifications  Verification[] @relation("Verifier")
+  archivedTargets SubmissionTarget[] @relation("TargetArchiver")
+}
+
+model UserSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  tokenHash  String   @unique
+  userId     String   @db.Uuid
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ResearchGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members GroupMembership[]
+  papers  Paper[]
+}
+
+model GroupMembership {
+  id        String    @id @default(uuid()) @db.Uuid
+  groupId   String    @db.Uuid
+  userId    String    @db.Uuid
+  role      GroupRole
+  createdAt DateTime  @default(now())
+
+  group ResearchGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model Paper {
+  id          String   @id @default(uuid()) @db.Uuid
+  groupId     String   @db.Uuid
+  title       String
+  abstract    String?  @db.Text
+  researchArea String?
+  manuscriptUrl String?
+  notes       String?  @db.Text
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group     ResearchGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy User          @relation("PaperCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  authors   PaperAuthor[]
+  targets   SubmissionTarget[]
+
+  @@index([groupId, createdAt])
+}
+
+model PaperAuthor {
+  id          String  @id @default(uuid()) @db.Uuid
+  paperId     String  @db.Uuid
+  fullName    String
+  email       String?
+  affiliation String?
+  position    Int
+  isCorresponding Boolean @default(false)
+
+  paper Paper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+
+  @@index([paperId, position])
+}
+
+model SubmissionTarget {
+  id                 String       @id @default(uuid()) @db.Uuid
+  paperId            String       @db.Uuid
+  conferenceName     String
+  acronym            String?
+  edition            String?
+  conferenceYear     Int?
+  track              String?
+  cfpUrl             String?
+  authorGuidelinesUrl String?
+  timezone           String       @default("UTC")
+  abstractDeadline   DateTime?
+  fullPaperDeadline  DateTime?
+  notificationDate   DateTime?
+  deadlineSource     String?
+  status             TargetStatus @default(ACTIVE)
+  archiveReason      String?      @db.Text
+  previousTargetId   String?      @db.Uuid
+  archivedAt         DateTime?
+  archivedById       String?      @db.Uuid
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  paper       Paper @relation(fields: [paperId], references: [id], onDelete: Restrict)
+  archivedBy  User? @relation("TargetArchiver", fields: [archivedById], references: [id], onDelete: SetNull)
+  requirements Requirement[]
+  tasks        Task[]
+
+  @@index([paperId, status])
+  @@index([fullPaperDeadline])
+}
+
+model Requirement {
+  id           String             @id @default(uuid()) @db.Uuid
+  targetId     String             @db.Uuid
+  description  String             @db.Text
+  type         RequirementType
+  sourceType   RequirementSourceType
+  sourceUrl    String?
+  sourceSection String?
+  condition    String?            @db.Text
+  needsEvidence Boolean           @default(false)
+  copiedFromId String?            @db.Uuid
+  status       RequirementStatus  @default(NOT_REVIEWED)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  target        SubmissionTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  taskLinks     TaskRequirement[]
+  evidence      Evidence[]
+  verifications Verification[]
+
+  @@index([targetId, status])
+  @@index([targetId, type])
+}
+
+model Task {
+  id          String     @id @default(uuid()) @db.Uuid
+  targetId    String     @db.Uuid
+  title       String
+  description String?    @db.Text
+  assigneeId  String?    @db.Uuid
+  createdById String     @db.Uuid
+  dueAt       DateTime?
+  copiedFromId String?   @db.Uuid
+  status      TaskStatus @default(TODO)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  target       SubmissionTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  assignee     User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy    User             @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  requirementLinks TaskRequirement[]
+
+  @@index([targetId, status])
+  @@index([assigneeId, status])
+  @@index([dueAt])
+}
+
+model TaskRequirement {
+  taskId        String @db.Uuid
+  requirementId String @db.Uuid
+
+  task        Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, requirementId])
+  @@index([requirementId])
+}
+
+model Evidence {
+  id              String       @id @default(uuid()) @db.Uuid
+  requirementId   String       @db.Uuid
+  type            EvidenceType
+  description     String       @db.Text
+  sourceUrl       String?
+  fileName        String?
+  filePath        String?
+  versionReference String?
+  createdById     String       @db.Uuid
+  createdAt       DateTime     @default(now())
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("EvidenceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  verifications Verification[]
+
+  @@index([requirementId, createdAt])
+}
+
+model Verification {
+  id            String             @id @default(uuid()) @db.Uuid
+  requirementId String             @db.Uuid
+  evidenceId    String?            @db.Uuid
+  verifierId    String             @db.Uuid
+  result        VerificationResult
+  note          String?            @db.Text
+  verifiedAt    DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  evidence    Evidence?    @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  verifier    User         @relation("Verifier", fields: [verifierId], references: [id], onDelete: Restrict)
+
+  @@index([requirementId, verifiedAt])
+  @@index([evidenceId])
+}

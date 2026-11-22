@@ -1,0 +1,105 @@
+/*
+ * Design tokens. Values and naming follow the Nexum design language
+ * (Outfit typography, teal brand, soft canvas, semantic status colours),
+ * re-implemented locally because Nexum's @agentiviumai/* packages are private.
+ */
+:root {
+  --font-sans: Outfit, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --color-canvas: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f3f4f6;
+  --color-surface-hover: #f9fafb;
+
+  --color-text: #191b26;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  --color-brand: #234d57;
+  --color-brand-hover: #1b3d45;
+  --color-brand-soft: #e6f0f2;
+
+  --color-healthy: #15803d;
+  --color-healthy-bg: #e8f6ec;
+  --color-watch: #b45309;
+  --color-watch-bg: #fff6e0;
+  --color-low: #c2410c;
+  --color-low-bg: #ffede3;
+  --color-critical: #dc2626;
+  --color-critical-bg: #feecec;
+  --color-info: #1d4ed8;
+  --color-info-bg: #e8effe;
+  --color-neutral: #4b5563;
+  --color-neutral-bg: #eef0f3;
+
+  --sidebar-bg: #14232a;
+  --sidebar-text: #b9c7cc;
+  --sidebar-active-bg: rgba(255, 255, 255, 0.1);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-card: 0 1px 2px rgba(25, 27, 38, 0.04);
+  --shadow-floating: 0 10px 25px -5px rgba(25, 27, 38, 0.1);
+  --shadow-dialog: 0 24px 60px -12px rgba(25, 27, 38, 0.35);
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 15px;
+  --font-size-lg: 18px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 32px;
+
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
